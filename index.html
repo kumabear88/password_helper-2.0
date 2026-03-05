@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>密碼小助手 - 強密碼檢查器</title>
+    <!-- 引入 Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        /* 保持字體風格 */
+        body {
+            font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gradient-to-b from-sky-100 to-indigo-50 flex items-center justify-center p-4 text-slate-800">
+
+    <div class="max-w-xl w-full bg-white rounded-3xl shadow-xl overflow-hidden border-4 border-white">
+        
+        <!-- Header -->
+        <div class="bg-indigo-500 p-6 text-white text-center relative overflow-hidden">
+            <i data-lucide="sparkles" class="absolute top-4 right-6 w-16 h-16 text-indigo-400 opacity-30"></i>
+            <h1 class="text-3xl font-extrabold tracking-wide flex items-center justify-center gap-3 relative z-10">
+                <i data-lucide="key-round" class="w-8 h-8"></i>
+                密碼小助手
+            </h1>
+            <p class="mt-2 text-indigo-100 font-medium relative z-10">測試看看你的密碼有多強吧！</p>
+        </div>
+
+        <div class="p-6 sm:p-8">
+            
+            <!-- Assistant Chat Bubble -->
+            <div class="flex items-start gap-4 mb-8">
+                <div class="bg-sky-100 p-3 rounded-full shadow-sm shrink-0 border-2 border-sky-200">
+                    <i data-lucide="bot" class="w-10 h-10 text-sky-600"></i>
+                </div>
+                
+                <div class="flex-1 bg-sky-50 p-5 rounded-3xl rounded-tl-none border border-sky-100 shadow-sm text-lg leading-relaxed relative" id="chat-bubble">
+                    <!-- Bubble tail -->
+                    <div class="absolute top-0 -left-2 w-4 h-4 bg-sky-50 border-t border-l border-sky-100 transform -skew-x-12"></div>
+                    
+                    <!-- 對話內容區塊 -->
+                    <div id="chat-content">
+                        <p>嗨！小朋友你好，我是老師的小助手 👋</p>
+                        <p class="mt-2">我們來練習設定安全的密碼吧！規則很簡單：</p>
+                        <ul class="mt-2 ml-2 space-y-1 font-medium text-sky-800">
+                            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-5 h-5 text-sky-500"></i> 必須有『英文字母』加上『數字』</li>
+                            <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-5 h-5 text-sky-500"></i> 長度要在 8 到 16 個字之間</li>
+                        </ul>
+                        <p class="mt-3">請在下面輸入你想測試的密碼，讓我來幫你檢查！</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Input Area -->
+            <div class="mb-6 relative">
+                <label class="block text-sm font-bold text-slate-500 mb-2 ml-1">輸入你的密碼：</label>
+                <div class="relative">
+                    <input
+                        type="password"
+                        id="password-input"
+                        maxlength="30"
+                        placeholder="在此輸入密碼..."
+                        class="w-full pl-5 pr-12 py-4 text-xl bg-slate-50 border-2 border-slate-200 rounded-2xl focus:outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-mono"
+                    />
+                    <button
+                        type="button"
+                        id="toggle-password-btn"
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors p-1"
+                        title="顯示密碼"
+                    >
+                        <i data-lucide="eye" id="toggle-icon" class="w-7 h-7"></i>
+                    </button>
+                </div>
+                <div id="char-count" class="text-right text-sm mt-2 font-medium text-slate-400">
+                    目前字數：0
+                </div>
+            </div>
+
+            <!-- Crack Time Indicator -->
+            <div class="mb-8 bg-slate-50 border-2 border-slate-100 rounded-2xl p-5 shadow-inner">
+                <div class="flex items-center gap-2 mb-2">
+                    <i data-lucide="clock" class="w-6 h-6 text-indigo-500"></i>
+                    <span class="font-bold text-slate-700 text-lg">破解時間大挑戰</span>
+                </div>
+                <div id="crack-info-container">
+                    <p class="text-slate-400" id="crack-placeholder">輸入密碼後，這裡會顯示壞人需要猜多久喔！</p>
+                    <p class="text-slate-600 text-lg leading-relaxed hidden" id="crack-result">
+                        如果網路上的壞人想用超級電腦猜出這個密碼，他大約需要花費：
+                        <span id="crack-time-text" class="font-extrabold text-2xl mx-2 block sm:inline mt-2 sm:mt-0"></span>
+                        <span id="crack-time-label" class="text-sm font-bold text-slate-500 block sm:inline"></span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Action Button -->
+            <button
+                id="check-btn"
+                class="w-full bg-indigo-500 hover:bg-indigo-600 text-white font-bold text-xl py-4 px-6 rounded-full shadow-lg hover:shadow-xl transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2"
+            >
+                <i data-lucide="shield-check" class="w-6 h-6"></i>
+                請小助手幫我檢查！
+            </button>
+
+        </div>
+    </div>
+
+    <script>
+        // 初始化 Icons
+        lucide.createIcons();
+
+        // DOM 元素選取
+        const passwordInput = document.getElementById('password-input');
+        const toggleBtn = document.getElementById('toggle-password-btn');
+        const charCount = document.getElementById('char-count');
+        const checkBtn = document.getElementById('check-btn');
+        const chatContent = document.getElementById('chat-content');
+        
+        const crackPlaceholder = document.getElementById('crack-placeholder');
+        const crackResult = document.getElementById('crack-result');
+        const crackTimeText = document.getElementById('crack-time-text');
+        const crackTimeLabel = document.getElementById('crack-time-label');
+
+        // 狀態變數
+        let showPassword = false;
+
+        // 預設的打招呼內容
+        const initialChatHTML = `
+            <p>嗨！小朋友你好，我是老師的小助手 👋</p>
+            <p class="mt-2">我們來練習設定安全的密碼吧！規則很簡單：</p>
+            <ul class="mt-2 ml-2 space-y-1 font-medium text-sky-800">
+                <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-5 h-5 text-sky-500"></i> 必須有『英文字母』加上『數字』</li>
+                <li class="flex items-center gap-2"><i data-lucide="check-circle-2" class="w-5 h-5 text-sky-500"></i> 長度要在 8 到 16 個字之間</li>
+            </ul>
+            <p class="mt-3">請在下面輸入你想測試的密碼，讓我來幫你檢查！</p>
+        `;
+
+        // 顯示/隱藏密碼切換
+        toggleBtn.addEventListener('click', () => {
+            showPassword = !showPassword;
+            passwordInput.type = showPassword ? 'text' : 'password';
+            toggleBtn.title = showPassword ? '隱藏密碼' : '顯示密碼';
+            toggleBtn.innerHTML = `<i data-lucide="${showPassword ? 'eye-off' : 'eye'}" class="w-7 h-7"></i>`;
+            lucide.createIcons();
+        });
+
+        // 監聽密碼輸入事件
+        passwordInput.addEventListener('input', (e) => {
+            const pwd = e.target.value;
+            
+            // 更新字數顯示
+            if (pwd.length > 16) {
+                charCount.innerHTML = `目前字數：${pwd.length} <span class="text-red-500">(超過囉！)</span>`;
+                charCount.className = "text-right text-sm mt-2 font-medium text-red-500";
+            } else {
+                charCount.innerText = `目前字數：${pwd.length}`;
+                charCount.className = "text-right text-sm mt-2 font-medium text-slate-400";
+            }
+
+            // 重置對話框為預設狀態
+            chatContent.innerHTML = initialChatHTML;
+            lucide.createIcons();
+
+            // 計算破解時間
+            calculateCrackTime(pwd);
+        });
+
+        // 計算破解時間邏輯
+        function calculateCrackTime(pwd) {
+            if (!pwd) {
+                crackPlaceholder.classList.remove('hidden');
+                crackResult.classList.add('hidden');
+                return;
+            }
+
+            crackPlaceholder.classList.add('hidden');
+            crackResult.classList.remove('hidden');
+
+            let pool = 0;
+            if (/[a-z]/.test(pwd)) pool += 26;
+            if (/[A-Z]/.test(pwd)) pool += 26;
+            if (/[0-9]/.test(pwd)) pool += 10;
+            if (/[^a-zA-Z0-9]/.test(pwd)) pool += 32;
+
+            const combinations = Math.pow(pool, pwd.length);
+            // 假設普通駭客電腦每秒猜 10 億次
+            const guessesPerSecond = 1000000000; 
+            const seconds = combinations / guessesPerSecond;
+
+            let timeText = '';
+            let status = '';
+
+            if (seconds < 1) { timeText = '不到 1 秒鐘'; status = 'danger'; }
+            else if (seconds < 60) { timeText = `${Math.round(seconds)} 秒鐘`; status = 'danger'; }
+            else if (seconds < 3600) { timeText = `${Math.round(seconds / 60)} 分鐘`; status = 'danger'; }
+            else if (seconds < 86400) { timeText = `${Math.round(seconds / 3600)} 小時`; status = 'warning'; }
+            else if (seconds < 2592000) { timeText = `${Math.round(seconds / 86400)} 天`; status = 'warning'; }
+            else if (seconds < 31536000) { timeText = `${Math.round(seconds / 2592000)} 個月`; status = 'safe'; }
+            else if (seconds < 3153600000) { timeText = `${Math.round(seconds / 31536000)} 年`; status = 'safe'; }
+            else { timeText = '超過 100 年！'; status = 'safe'; }
+
+            const colorMap = {
+                'danger': 'text-red-500',
+                'warning': 'text-orange-500',
+                'safe': 'text-green-500'
+            };
+
+            const labelMap = {
+                'danger': '太快了，很危險！',
+                'warning': '還可以，但能再加長一點！',
+                'safe': '超級無敵安全！'
+            };
+
+            // 更新 DOM
+            crackTimeText.innerText = timeText;
+            crackTimeText.className = `font-extrabold text-2xl mx-2 block sm:inline mt-2 sm:mt-0 ${colorMap[status]}`;
+            
+            crackTimeLabel.innerText = `(${labelMap[status]})`;
+        }
+
+        // 檢查按鈕邏輯
+        checkBtn.addEventListener('click', () => {
+            const pwd = passwordInput.value;
+
+            if (pwd.length === 0) {
+                showError(["你還沒有輸入密碼喔！"]);
+                return;
+            }
+
+            const errors = [];
+            if (pwd.length < 8) errors.push("密碼太短囉，最少需要 8 個字。");
+            if (pwd.length > 16) errors.push("密碼太長囉，超過 16 個字會打字打很久，請縮短一點。");
+            if (!/[a-zA-Z]/.test(pwd)) errors.push("好像忘記加『英文字母』了喔！");
+            if (!/[0-9]/.test(pwd)) errors.push("好像忘記加『數字』了喔！");
+
+            if (errors.length > 0) {
+                showError(errors);
+            } else {
+                showSuccess();
+            }
+        });
+
+        // 顯示錯誤訊息
+        function showError(errors) {
+            let errorListHTML = errors.map(err => `<li>${err}</li>`).join('');
+            chatContent.innerHTML = `
+                <div class="text-rose-600">
+                    <p class="font-bold text-xl mb-2 flex items-center gap-2">
+                        <i data-lucide="alert-circle" class="w-6 h-6"></i> 哎呀！有幾個小地方需要修改喔：
+                    </p>
+                    <ul class="list-disc ml-6 mb-3 space-y-1">
+                        ${errorListHTML}
+                    </ul>
+                    <p class="font-bold mt-2 bg-rose-100 inline-block px-3 py-1 rounded-lg">再試一次看看吧！💪</p>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // 顯示成功訊息
+        function showSuccess() {
+            chatContent.innerHTML = `
+                <div class="text-emerald-700">
+                    <p class="font-bold text-xl mb-2 flex items-center gap-2">
+                        <i data-lucide="shield-check" class="w-6 h-6"></i> 🎉 太棒了！
+                    </p>
+                    <p>這個密碼完全符合規定，超級安全！</p>
+                    <p class="mt-2">你可以把它記在你的小本子上，安心地使用這個密碼囉！</p>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+    </script>
+</body>
+</html>
